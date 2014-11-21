@@ -26,38 +26,66 @@ public:
 
 class AVL_ItemCancion {
 public:
-    AVL_ItemCancion             (vector<Song> &v);
-    vector<Song*> searchTittle  (string &tit);
-    vector<Song*> searchAuthor  (string &aut);
+    AVL_ItemCancion (): root(0) {} ;  // Modificarlo
     
-    bool insert     (ItemCancion &data) { return insert(root, data); }
-    bool search     (ItemCancion &data, ItemCancion &result);
+    bool insert             (ItemCancion &data) { return insert(root, data); }
+    ItemCancion* search      (ItemCancion &data); // cambiar para que devuelva un dato ItemCancion
+    bool erase              (ItemCancion &data);
     
 private:
-    Node *root;
+    Node<ItemCancion> *root;
     
     int insert      (Node<ItemCancion>* &c, ItemCancion &data);
     void rotRight   (Node<ItemCancion>* &p);
     void rotLeft    (Node<ItemCancion>* &p);
-    
     Node<ItemCancion>* searchKey    (ItemCancion &data, Node<ItemCancion> *p);
+    Node<ItemCancion>* eraseData    (ItemCancion &data, Node<ItemCancion>* &p);
+    Node<ItemCancion>* eraseMin     (Node<ItemCancion>* &p);
 };
 
-vector<Song*> AVL_ItemCancion::searchAuthor(string& aut) {
-    
+bool AVL_ItemCancion::erase(ItemCancion &data) {
+    Node<ItemCancion> *result = eraseData(data, root);
+    if (result)
+        return true;
+    return false;
 }
 
-vector<Song*> AVL_ItemCancion::searchTittle(string& tit) {
-    
-}
-
-AVL_ItemCancion(vector<Song> &v) {
-    for (int i = 0; i < v.size(); ++i) {
-        insert(v[i]);
+Node<ItemCancion>* AVL_ItemCancion::eraseData(ItemCancion& data, Node<ItemCancion>* &p) {
+    if (p) 
+        eraseData(data, p->left);
+    else {
+        if (data > p->data)
+            eraseData (data, p->right);
+        else {
+            Node<ItemCancion> *temp = p;
+            if (!p->left)
+                p = p->right;
+            else
+                if (!p->right)
+                    p = p->left;
+                else if (p->left && p->right) {
+                    temp = eraseMin(p->right);
+                    p->data = temp->data;
+                }
+            delete temp;
+        }
     }
 }
 
-Node<ItemCancion>* AVL_ItemCancion::searchKey(ItemCancion& data, Node<ItemCancion>* p) {
+Node<ItemCancion>* AVL_ItemCancion::eraseMin (Node<ItemCancion>* &p) {
+    Node<ItemCancion> *result;
+    if (p) {
+        if (p->left)
+            return eraseMin(p->left);
+        else {
+            result = p;
+            p = p->right;
+            return result;
+        }
+    }
+}
+
+Node<ItemCancion>* AVL_ItemCancion::searchKey(ItemCancion &data, Node<ItemCancion> *p) {
     if (!p)
         return 0;
     else if (data < p->data)
@@ -68,13 +96,9 @@ Node<ItemCancion>* AVL_ItemCancion::searchKey(ItemCancion& data, Node<ItemCancio
         return p;
 }
 
-bool AVL_ItemCancion::search(ItemCancion& data, ItemCancion& result) {
-    Node<ItemCancion> *p = searchKey(ItemCancion &data, ItemCancion &result);
-    if (p) {
-        result = p->data;
-        return true;
-    }
-    return false;
+ItemCancion* AVL_ItemCancion::search(ItemCancion &data) {
+    Node<ItemCancion> *p = searchKey(data, root);
+    return &    p->data;
 }
 
 int AVL_ItemCancion::insert(Node<ItemCancion>* &c, ItemCancion &data) {
