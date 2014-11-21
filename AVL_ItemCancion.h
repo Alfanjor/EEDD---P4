@@ -26,11 +26,11 @@ public:
 
 class AVL_ItemCancion {
 public:
-    AVL_ItemCancion (): root(0) {} ;  // Modificarlo
+    AVL_ItemCancion (): root(0) {} ;
     
     bool insert             (ItemCancion &data) { return insert(root, data); }
-    ItemCancion* search      (ItemCancion &data); // cambiar para que devuelva un dato ItemCancion
     bool erase              (ItemCancion &data);
+    ItemCancion* search     (ItemCancion &data);
     
 private:
     Node<ItemCancion> *root;
@@ -38,7 +38,8 @@ private:
     int insert      (Node<ItemCancion>* &c, ItemCancion &data);
     void rotRight   (Node<ItemCancion>* &p);
     void rotLeft    (Node<ItemCancion>* &p);
-    Node<ItemCancion>* searchKey    (ItemCancion &data, Node<ItemCancion> *p);
+    
+    ItemCancion* searchKey          (ItemCancion &data, Node<ItemCancion> *p);
     Node<ItemCancion>* eraseData    (ItemCancion &data, Node<ItemCancion>* &p);
     Node<ItemCancion>* eraseMin     (Node<ItemCancion>* &p);
 };
@@ -85,7 +86,7 @@ Node<ItemCancion>* AVL_ItemCancion::eraseMin (Node<ItemCancion>* &p) {
     }
 }
 
-Node<ItemCancion>* AVL_ItemCancion::searchKey(ItemCancion &data, Node<ItemCancion> *p) {
+ItemCancion* AVL_ItemCancion::searchKey(ItemCancion &data, Node<ItemCancion> *p) {
     if (!p)
         return 0;
     else if (data < p->data)
@@ -93,12 +94,12 @@ Node<ItemCancion>* AVL_ItemCancion::searchKey(ItemCancion &data, Node<ItemCancio
     else if (data > p->data)
         return searchKey (data, p->right);
     else
-        return p;
+        return &p->data;
 }
 
 ItemCancion* AVL_ItemCancion::search(ItemCancion &data) {
-    Node<ItemCancion> *p = searchKey(data, root);
-    return &    p->data;
+    ItemCancion *p = searchKey(data, root);
+    return p;
 }
 
 int AVL_ItemCancion::insert(Node<ItemCancion>* &c, ItemCancion &data) {

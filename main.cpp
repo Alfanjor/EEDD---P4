@@ -7,15 +7,20 @@
 #include "millisleep.h"
 #include "Song.h"
 #include "Request.h"
+#include "ItemCancion.h"
+#include "AVL_ItemCancion.h"
 
 using namespace std;
 using namespace tthread;
 
-void CargarListaCaciones(std::vector<Song> &vCanciones);
+void CargarListaCaciones(vector<Song> &vCanciones);
 
 class RadioApp {
     vector<Request> vPeticiones;    //Peticiones que se van a reproducir
     vector<Song> vCanciones;        //Canciones del documento .txt
+    
+    AVL_ItemCancion autores;
+    AVL_ItemCancion titulos;
     
     thread threadReproducirCanciones;
     mutex semaforo;
@@ -24,12 +29,39 @@ class RadioApp {
     static void hebraReproducirCanciones(void *arg) {
         RadioApp *radioApp = static_cast<RadioApp *> (arg);
         radioApp->reproducirCanciones();
+        // Construir los AVL por cada palabra que encuentres en cada título o autor
     }
 
 public:
 
     RadioApp() : threadReproducirCanciones(hebraReproducirCanciones, this) {
         pinchar = true;
+        CargarListaCaciones(vCanciones);
+        
+        // Construcción de los árboles AVL
+        for (int i = 0; i < vCanciones.size(); ++i) {
+            
+            vector<string> palabras;
+            string palabra, line = vCanciones[i].GetArtist();
+            stringstream lineStream(line);
+            
+            while (getline(lineStream, palabra, ' ')) {
+                palabras.push_back(palabra);
+            };
+            
+            ItemCancion author(vCanciones[i].GetArtist(), i+1);
+            ItemCancion tittle(vCanciones[i].GetTitle(), i+1);
+            
+            ItemCancion *aux = 0;
+            
+            aux = autores.search(author);
+            if (!aux) 
+                autores.insert(author);
+            
+            aux = titulos.search(tittle);
+            if (!aux)
+                titulos.insert(tittle);
+        }
     }
 
     void reproducirCanciones() {
@@ -40,16 +72,17 @@ public:
             while (pinchar && !vPeticiones.empty()) {
                 // Sacar una canción y reproducirla
                 semaforo.lock();
-                //Coge la que tenga más prioridad (última)
+                // Coge la que tenga más prioridad (última)
                 int cancion = vPeticiones.back().getCod();
-                vPeticiones.erase(vPeticiones.end());
+                vPeticiones.pop_back();
                 semaforo.unlock();
-
+                
                 cout << "Reproduciendo canción " << 
                         vCanciones[cancion - 1].GetTitle() << 
                         " de " << vCanciones[cancion - 1].GetArtist() <<
                         "... (" << vCanciones[cancion - 1].GetCode() << ")" << endl;
                 // Simular el tiempo de reproducción de la canción (entre 2 y 12 seg.)
+                
                 millisleep(2000 + 1000 * (rand() % 10));
             }
             
@@ -59,11 +92,13 @@ public:
     void solicitarCanciones() {
         int cancion; //Código de la canción que se añadirá a vPeticiones
         
-        CargarListaCaciones(vCanciones);
-        
         cout << "¡Bienvenido a Radionauta v4!" << endl;
         cout << "Introduce el código de la canción que quieres reproducir:" 
                 << endl;
+        ItemCancion prueba("The Who");
+        ItemCancion *p;
+        p = autores.search(prueba);
+        cout << "Palabra encontrada en el árbol: " << p->GetPalabra() << endl;
         
         // Pedir canciones hasta que se introduce "0"
         do {
@@ -78,11 +113,9 @@ public:
             }
             
             semaforo.lock();
-            
             //Código fuente para añadir canciones a vPeticiones
             Request peticion(cancion); 
-            vPeticiones.push_back(peticion);
-            
+            vPeticiones.push_back(peticion);            
             semaforo.unlock();
 
         } while (cancion != 0);
@@ -101,7 +134,7 @@ public:
  *                  canciones que se encuentran en el archivo de canciones para
  *                  tal fin ("canciones.txt") en el directorio del proyecto.
  */
-void CargarListaCaciones(std::vector<Song> &vCanciones) {
+void CargarListaCaciones(vector<Song> &vCanciones) {
     try {
         // Opens a file
         fstream fi("canciones.txt");
@@ -122,7 +155,7 @@ void CargarListaCaciones(std::vector<Song> &vCanciones) {
         }
         fi.close();
         vCanciones.pop_back();
-    } catch (std::exception &e) {
+    } catch (exception &e) {
         cout << "The file could not be open";
     }
 }
@@ -130,6 +163,6 @@ void CargarListaCaciones(std::vector<Song> &vCanciones) {
 int main(int argc, char** argv) {
     RadioApp app;
     app.solicitarCanciones();
-
+    
     return 0;
 }
